@@ -81,11 +81,25 @@ std::string readFile(const char* filePath) {
     return content;
 }
 glm::vec3 cameraPosition = glm::vec3(0.0f, 0.0f, -3.0f);
+int cullFaceC = 0;
+bool polygonMode = false;
 
 class MyWindow : public He::App::GLFW3Window {
 public:
     void OnKeyDown(He::App::Input::Keys key, He::App::Input::KeyModifiers mods) override {
         if (key == He::App::Input::Keys::Escape) glfwSetWindowShouldClose(this->_windowHandler, true);
+        if (!mods.Repeat) {
+            if (key == He::App::Input::Keys::C) {
+                cullFaceC++;
+                if (cullFaceC > 2) cullFaceC = 0;
+
+                glCullFace(cullFaceC == 0 ? GL_FRONT : cullFaceC == 1 ? GL_BACK : GL_FRONT_AND_BACK);
+            }
+            if (key == He::App::Input::Keys::P) {
+                polygonMode = !polygonMode;
+                glPolygonMode(GL_FRONT_AND_BACK, polygonMode ? GL_LINE : GL_FILL);
+            }
+        }
         switch (key) {
             case He::App::Input::Keys::A:
                 cameraPosition.x += 0.1f;
@@ -197,22 +211,61 @@ int main(int argc, char* argv[]) {
      0.5f, -0.5f,  0.5f,  // 21
      0.5f,  0.5f,  0.5f,  // 22
      0.5f,  0.5f, -0.5f   // 23*/
-        glDisable(GL_CULL_FACE);
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEPTH_TEST);
+        //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glm::vec3 topLeft = glm::vec3(-1, 1, 0);
+        glm::vec3 bottomLeft = glm::vec3(-1, -1, 0);
+        glm::vec3 topRight = glm::vec3(1, 1, 0);
+        glm::vec3 bottomRight = glm::vec3(1, -1, 0);
+        glm::vec3 topLeftFront = glm::vec3(-1, 1, 1);
+        glm::vec3 bottomLeftFront = glm::vec3(-1, -1, 1);
+        glm::vec3 topRightFront = glm::vec3(1, 1, 1);
+        glm::vec3 bottomRightFront = glm::vec3(1, -1, 1);
+        glm::vec3 topLeftBack = glm::vec3(-1, 1, -1);
+        glm::vec3 topRightBack = glm::vec3(1, 1, -1);
+        glm::vec3 bottomLeftBack = glm::vec3(-1, -1, -1);
+        glm::vec3 bottomRightBack = glm::vec3(1, -1, -1);
+
         He::Utils::Array<glm::vec3> forward_vertices = {
-            {-0.5f, -0.5f,  0.5f},  // 0
-             {0.5f, -0.5f,  0.5f},  // 1
-             {0.5f,  0.5f,  0.5f},  // 2
-            {-0.5f,  0.5f,  0.5f},  // 3
+            bottomLeftFront,
+            bottomRightFront,
+            topRightFront,
+            topLeftFront,
         };
         He::Utils::Array<glm::vec3> backward_vertices = {
-            {-0.5f, -0.5f, -0.5f},  // 4
-             {0.5f, -0.5f, -0.5f},  // 5
-             {0.5f,  0.5f, -0.5f},  // 6
-            {-0.5f,  0.5f, -0.5f},  // 7
+            topLeftBack,
+            topRightBack,
+            bottomRightBack,
+            bottomLeftBack,
+        };
+        He::Utils::Array<glm::vec3> up_vertices = {
+            topLeftFront,
+            topRightFront,
+            topRightBack,
+            topLeftBack,
         };
 
-        He::Utils::Array<glm::vec3> vertices(8);
+        He::Utils::Array<glm::vec3> down_vertices = {
+            bottomLeftBack,
+            bottomRightBack,
+            bottomRightFront,
+            bottomLeftFront,
+        };
+        He::Utils::Array<glm::vec3> right_vertices = {
+            bottomRightBack,
+            topRightBack,
+            topRightFront,
+            bottomRightFront,
+        };
+        He::Utils::Array<glm::vec3> left_vertices = {
+            bottomLeftFront,
+            topLeftFront,
+            topLeftBack,
+            bottomLeftBack,
+        };
+
+        He::Utils::Array<glm::vec3> vertices(24);
         He::Utils::Array<glm::vec3> normals(vertices.size());
         He::Utils::Array<glm::vec2> uvs(vertices.size());
 
@@ -228,17 +281,21 @@ int main(int argc, char* argv[]) {
         }
 
         for (int i = 0; i < vertices.size() / 4; i++) {
-            indices[i*4 + 0] = i*4 + 0;
-            indices[i*4 + 1] = i*4 + 1;
-            indices[i*4 + 2] = i*4 + 2;
-            indices[i*4 + 3] = i*4 + 2;
-            indices[i*4 + 4] = i*4 + 3;
-            indices[i*4 + 5] = i*4 + 0;
+            indices[i*6 + 0] = i*4 + 0;
+            indices[i*6 + 1] = i*4 + 1;
+            indices[i*6 + 2] = i*4 + 2;
+            indices[i*6 + 3] = i*4 + 0;
+            indices[i*6 + 4] = i*4 + 2;
+            indices[i*6 + 5] = i*4 + 3;
         }
 
         for (int i = 0; i < 4; i++) {
             vertices[i] = forward_vertices[i];
             vertices[i + 4] = backward_vertices[i];
+            vertices[i + 8] = up_vertices[i];
+            vertices[i + 12] = down_vertices[i];
+            vertices[i + 16] = right_vertices[i];
+            vertices[i + 20] = left_vertices[i];
         }
 
 
@@ -259,14 +316,15 @@ int main(int argc, char* argv[]) {
         projection = glm::perspective(glm::radians(45.0f), (GLfloat)640 / (GLfloat)480, 0.1f, 100.0f);
 
 
-            shader.SetUniform("model", model);
             shader.SetUniform("projection", projection);
             shader.SetUniform("icolor", glm::vec3(1.f));
 
         while(!window.ShouldClose()){
-            glClear(GL_COLOR_BUFFER_BIT);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            model = glm::rotate(model, glm::radians((float)glfwGetTime() / 1000.0f), glm::vec3(0.0f, 1.0f, 0.0f));
             shader.SetUniform("view", glm::translate(view, cameraPosition));
+            shader.SetUniform("model", model);
             shader.Use();
 
 

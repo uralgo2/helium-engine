@@ -12,6 +12,8 @@ enum class Keys {
   		W,
   		S,
   		D,
+		P,
+		C,
   		Space,
 		LeftShift,
 		Escape

@@ -10,6 +10,8 @@ namespace He::App::Input {
 			case Keys::S: return "S";
 			case Keys::D: return "D";
 			case Keys::W: return "W";
+			case Keys::C: return "C";
+			case Keys::P: return "P";
 			case Keys::Space: return "Space";
 			case Keys::Unknown: return "Unknown";
 			case Keys::LeftShift: return "LeftShift";
@@ -23,6 +25,8 @@ namespace He::App::Input {
 			case GLFW_KEY_S: return Keys::S;
 			case GLFW_KEY_D: return Keys::D;
 			case GLFW_KEY_W: return Keys::W;
+			case GLFW_KEY_C: return Keys::C;
+			case GLFW_KEY_P: return Keys::P;
 			case GLFW_KEY_SPACE: return Keys::Space;
 			case GLFW_KEY_LEFT_SHIFT: return Keys::LeftShift;
 			case GLFW_KEY_ESCAPE: return Keys::Escape;
