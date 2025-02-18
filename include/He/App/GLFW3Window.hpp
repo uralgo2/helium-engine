@@ -9,6 +9,7 @@ namespace He::App {
         protected:
         GLFWwindow* _windowHandler;
         static void _glfw3KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+        static void _glfw3ResizeCallback(GLFWwindow* window, int width, int height);
         public:
         GLFW3Window(const char* title = "Helium Application", int width = 640, int height = 480);
         ~GLFW3Window() override;

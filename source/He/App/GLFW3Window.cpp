@@ -18,7 +18,16 @@ namespace He::App {
         }
     }
 
-    GLFW3Window::GLFW3Window(const char* title, int width, int height) : BaseWindow(title, width, height) {
+    void GLFW3Window::_glfw3ResizeCallback(GLFWwindow *window, int width, int height)
+    {
+        auto _this = static_cast<GLFW3Window*>(glfwGetWindowUserPointer(window));
+        _this->width = width;
+        _this->height = height;
+
+        glViewport(0, 0, width, height);
+    }
+    GLFW3Window::GLFW3Window(const char *title, int width, int height) : BaseWindow(title, width, height)
+    {
         DEBUG_INFO("Attempt to create GLFW3 window");
 
         this->_windowHandler = glfwCreateWindow(width, height, title, nullptr, nullptr);
@@ -31,6 +40,7 @@ namespace He::App {
 
         glfwSetWindowUserPointer(this->_windowHandler, this);
         glfwSetKeyCallback(this->_windowHandler, GLFW3Window::_glfw3KeyCallback);
+        glfwSetFramebufferSizeCallback(this->_windowHandler, GLFW3Window::_glfw3ResizeCallback);
 
         DEBUG_INFO("GLFW3 window created successful");
     }

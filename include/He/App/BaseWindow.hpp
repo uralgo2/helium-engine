@@ -20,11 +20,14 @@ namespace He::App {
         void SetWidth(int nw);
         void SetHeight(int nh);
 
+
         virtual void SetTitle(const char* t) {title = t;}
         virtual void Resize(){}
+        virtual void Resize(int nw, int nh){this->width = nw; this->height = nh;}
         virtual void SwapBuffers(){}
         virtual void OnKeyDown(Input::Keys key, Input::KeyModifiers mods){DEBUG_ERROR("You couldn't see that");};
         virtual void OnKeyUp(Input::Keys key, Input::KeyModifiers mods){DEBUG_ERROR("You couldn't see that");};
+        virtual void OnResize(int nw, int nh){}
     };
 }
 

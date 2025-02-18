@@ -1,7 +1,9 @@
 #ifdef _WIN32
 #include <Windows.h>
 #endif
-
+#ifdef NDEBUG
+#define _DEBUG
+#endif
 #include <fmt/core.h>
 #include <iostream>
 #include <string>
@@ -265,18 +267,70 @@ int main(int argc, char* argv[]) {
             bottomLeftBack,
         };
 
-        He::Utils::Array<glm::vec3> vertices(24);
+        std::vector<glm::vec3> listvertices, listnormals;
+        glm::vec3 offset(-8, -8, -8);
+        for(int x = 0; x < 16; ++x){
+            for(int y = 0; y < 16; ++y){
+                for(int z = 0; z < 16; ++z){
+                    if(!chunk[x][y][z]) continue;
+                    if(y == 15 || !chunk[x][y+1][z]) {
+                        for(auto vert : up_vertices){
+                            listvertices.push_back(vert + glm::vec3(x, y, z) + offset);
+                            listnormals.push_back(glm::vec3(0.0f, -1.0f, 0.0f));
+                        }
+                    }
+                    if(y == 0 || !chunk[x][y-1][z]){
+                        for(auto vert : down_vertices){
+                            listvertices.push_back(vert + glm::vec3(x, y, z) + offset);
+                            listnormals.push_back(glm::vec3(0.0f, 1.0f, 0.0f));
+                        }
+                    }
+
+                    if(x == 15 || !chunk[x+1][y][z]) {
+                        for(auto vert : right_vertices){
+                            listvertices.push_back(vert + glm::vec3(x, y, z) + offset);
+                            listnormals.push_back(glm::vec3(-1.0f, 0.0f, 0.0f));
+                        }
+                    }
+                    if(x == 0 || !chunk[x-1][y][z]){
+                        for(auto vert : left_vertices){
+                            listvertices.push_back(vert + glm::vec3(x, y, z) + offset);
+                            listnormals.push_back(glm::vec3(1.0f, 0.0f, 0.0f));
+                        }
+                    }
+
+                    if(z == 15 || !chunk[x][y][z+1]) {
+                        for(auto vert : forward_vertices){
+                            listvertices.push_back(vert + glm::vec3(x, y, z) + offset);
+                            listnormals.push_back(glm::vec3(0.0f, 0.0f, -1.0f));
+                        }
+                    }
+                    if(z == 0 || !chunk[x][y][z-1]){
+                        for(auto vert : backward_vertices){
+                            listvertices.push_back(vert + glm::vec3(x, y, z) + offset);
+                            listnormals.push_back(glm::vec3(0.0f, 0.0f, 1.0f));
+                        }
+                    }
+                }
+            }
+        }
+
+        He::Utils::Array<glm::vec3> vertices(listvertices.size());
         He::Utils::Array<glm::vec3> normals(vertices.size());
         He::Utils::Array<glm::vec2> uvs(vertices.size());
 
         He::Utils::Array<GLuint> indices(vertices.size()/4*6);
-        /*{
+
+        for(int i = 0; i < listvertices.size(); ++i) {
+            vertices[i] = listvertices[i];
+        }
+        /*{ 
             0, 1, 3,
-            1, 2, 3
+            1, 2, 3 
         };*/
 
         for (int i = 0; i < normals.size(); i++) {
-            normals[i] = glm::vec3(0.1f, 0.9f, 0.1f);
+            normals[i] = listnormals[i];//glm::vec3(0.1f, 0.9f, 0.1f);
             uvs[i] = glm::vec2(0.f, 0.f);
         }
 
@@ -289,14 +343,14 @@ int main(int argc, char* argv[]) {
             indices[i*6 + 5] = i*4 + 3;
         }
 
-        for (int i = 0; i < 4; i++) {
+        /*for (int i = 0; i < 4; i++) {
             vertices[i] = forward_vertices[i];
             vertices[i + 4] = backward_vertices[i];
             vertices[i + 8] = up_vertices[i];
             vertices[i + 12] = down_vertices[i];
             vertices[i + 16] = right_vertices[i];
             vertices[i + 20] = left_vertices[i];
-        }
+        }*/
 
 
         He::Graphics::GL::Mesh mesh(vertices, normals, uvs, indices);
@@ -313,23 +367,28 @@ int main(int argc, char* argv[]) {
         glm::mat4 projection(1.f);
         //model = glm::rotate(model, -55.0f, glm::vec3(1.0f, 0.0f, 0.0f));
         //view = glm::translate(view, cameraPosition);
-        projection = glm::perspective(glm::radians(45.0f), (GLfloat)640 / (GLfloat)480, 0.1f, 100.0f);
+        //model = glm::translate(model, glm::vec3(-8, -8, -8));
 
-
-            shader.SetUniform("projection", projection);
-            shader.SetUniform("icolor", glm::vec3(1.f));
+            shader.SetUniform("icolor", glm::vec3(0.4f, 0.8f, 0.3f));
+            shader.SetUniform("lightColor", glm::vec3(1.0f)); 
 
         while(!window.ShouldClose()){
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            model = glm::rotate(model, glm::radians((float)glfwGetTime() / 1000.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            projection = glm::perspective(glm::radians(45.0f), (GLfloat)window.Width() / (GLfloat)window.Height(), 0.1f, 100.0f);
+            model = glm::rotate(model, glm::radians((float)glfwGetTime() / 100.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::mat4 normalMatrix = glm::transpose(glm::inverse(model * view));
+
+            shader.SetUniform("projection", projection);
+            shader.SetUniform("normalMatrix", normalMatrix);
+            shader.SetUniform("lightPosition", cameraPosition);
             shader.SetUniform("view", glm::translate(view, cameraPosition));
             shader.SetUniform("model", model);
-            shader.Use();
+            shader.Use();  
 
 
             mesh.Draw();
-            window.SwapBuffers();
+            window.SwapBuffers(); 
 
             glfwPollEvents();
         }
@@ -340,8 +399,8 @@ int main(int argc, char* argv[]) {
         LOG_ERROR("{}", e.what());
     }
 
-#ifdef _DEBUG
-    system("pause");
+#ifdef _DEBUG  
+    system("pause || read -rsp $'Press enter to continue...\n'"); 
 #endif
 
     return 0;

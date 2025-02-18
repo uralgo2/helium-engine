@@ -9,6 +9,11 @@ find_package(glfw3 3.4 REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
+message("${CMAKE_BUILD_TYPE}")
+if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+    message("Building debug")
+add_compile_options(-D_DEBUG)
+endif()
 
 set(SOURCES source/main.cpp 
             source/He/Log.cpp 
